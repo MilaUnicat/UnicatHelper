@@ -8,9 +8,8 @@ async def pretty_print_leaderboard(board, ctx):
     board_list = ''
     for row in board:
         if isinstance(row[0], int):
-            # TODO use display name from guild instead of user
             member = await ctx.guild.fetch_member(row[0])
-            name = member
+            name = member.display_name
         else:
             name = row[0]
         board_list += f'{row_no}) {name} - {row[1]}\n'
