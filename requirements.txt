@@ -1,0 +1,3 @@
+sqlalchemy>=1.4.41
+aiohttp>=3.7.4,<4
+python-dotenv>=0.21.0
