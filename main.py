@@ -17,6 +17,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
+# TODO make it possible to override command prefix
 bot = commands.Bot(command_prefix='?', description=description, intents=intents)
 
 
@@ -26,6 +27,7 @@ async def on_ready():
     print('------')
 
 
+# TODO help command
 @bot.command()
 async def joined(ctx, member: discord.Member):
     """Says when a member joined."""
