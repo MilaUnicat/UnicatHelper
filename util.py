@@ -4,6 +4,19 @@ from Teams import Teams
 from sqlalchemy import update
 
 
+def help_text():
+    help_texty = f'help_me - shows this help text\n' \
+                 f'set_prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
+                 f'point_giver [@member] - grant a server member rights to update points\n' \
+                 f'add_team [name] [@role] - adds a team with the name given shadowing the given role\n' \
+                 f'remove_team [@role] - removes team and points attached to the role\n' \
+                 f'individual_points [@member] [points] - gives points to server member and their team\n' \
+                 f'update_points [@role] [points] - gives points to team with the given role\n' \
+                 f'leaderboard - shows the current team standings optionally add users to get user leaderboard\n' \
+                 f'joined [@member] - shows when the given member joined'
+    return help_texty
+
+
 async def pretty_print_leaderboard(board, ctx):
     row_no = 1
     board_list = ''

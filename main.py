@@ -38,7 +38,11 @@ async def on_ready():
     print('------')
 
 
-# TODO help command
+@bot.command()
+async def help_me(ctx):
+    await ctx.send(util.help_text())
+
+
 @bot.command()
 async def joined(ctx, member: discord.Member):
     """Says when a member joined."""
