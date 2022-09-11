@@ -47,23 +47,26 @@ async def joined(ctx, member: discord.Member):
 
 @bot.command()
 async def set_prefix(ctx, alias):
-    if ctx.guild.owner_id == ctx.author.id:
-        session = base.Session()
-        current = session.query(CustomChanges.command_prefix)\
-            .filter(CustomChanges.server_id == ctx.guild.id)\
-            .one_or_none()
-        if current is None:
-            stmt = insert(CustomChanges)\
-                .values(server_id=ctx.guild.id, command_prefix=alias)
+    if len(alias) == 1:
+        if ctx.guild.owner_id == ctx.author.id:
+            session = base.Session()
+            current = session.query(CustomChanges.command_prefix)\
+                .filter(CustomChanges.server_id == ctx.guild.id)\
+                .one_or_none()
+            if current is None:
+                stmt = insert(CustomChanges)\
+                    .values(server_id=ctx.guild.id, command_prefix=alias)
+            else:
+                stmt = update(CustomChanges)\
+                    .where(CustomChanges.server_id == ctx.guild.id)\
+                    .set(command_prefix=alias)
+            session.execute(stmt)
+            session.commit()
+            await ctx.send(f'New command prefix is now {alias}')
         else:
-            stmt = update(CustomChanges)\
-                .where(CustomChanges.server_id == ctx.guild.id)\
-                .set(command_prefix=alias)
-        session.execute(stmt)
-        session.commit()
-        await ctx.send(f'New command prefix is now {alias}')
+            await ctx.send(f'Only the server owner can update prefix!')
     else:
-        await ctx.send(f'Only the server owner can update prefix!')
+        await ctx.send(f'Alias must be only one character!')
 
 
 @bot.command()
