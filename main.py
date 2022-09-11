@@ -4,6 +4,7 @@ import base
 from PrivilegedUsers import PrivilegedUsers
 from Teams import Teams
 from UserPoints import UserPoints
+from CustomChanges import CustomChanges
 import os
 from dotenv import load_dotenv
 from sqlalchemy import insert, delete, update
@@ -17,8 +18,18 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
-# TODO make it possible to override command prefix
-bot = commands.Bot(command_prefix='?', description=description, intents=intents)
+
+def custom_prefix(ctx, message: discord.Message):
+    session = base.Session()
+    prefix = session.query(CustomChanges.command_prefix)\
+        .filter(CustomChanges.server_id == message.guild.id)\
+        .one_or_none()
+    if prefix is None:
+        prefix = '£'
+    return prefix
+
+
+bot = commands.Bot(command_prefix=custom_prefix, description=description, intents=intents)
 
 
 @bot.event
@@ -32,6 +43,24 @@ async def on_ready():
 async def joined(ctx, member: discord.Member):
     """Says when a member joined."""
     await ctx.send(f'{member.name} joined {discord.utils.format_dt(member.joined_at)}')
+
+
+@bot.command()
+async def set_prefix(ctx, alias):
+    session = base.Session()
+    current = session.query(CustomChanges.command_prefix)\
+        .filter(CustomChanges.server_id == ctx.guild.id)\
+        .one_or_none()
+    if current is None:
+        stmt = insert(CustomChanges)\
+            .values(server_id=ctx.guild.id, command_prefix=alias)
+    else:
+        stmt = update(CustomChanges)\
+            .where(CustomChanges.server_id == ctx.guild.id)\
+            .set(command_prefix=alias)
+    session.execute(stmt)
+    session.commit()
+    await ctx.send(f'New command prefix is now {alias}')
 
 
 @bot.command()
