@@ -53,7 +53,11 @@ def update_team_total(session, ctx, team_id, team_name, points, message_content=
     if team_points is None:
         message_content = (message_content + '\n' + f'No team related to {team_name} exists on this server')
     else:
-        point_total = team_points[0] + int(points)
+        if team_points[0] is None:
+            starting_points = 0
+        else:
+            starting_points = team_points[0]
+        point_total = starting_points + int(points)
         stmt = update(Teams) \
             .where(Teams.server_id == ctx.guild.id) \
             .where(Teams.team_id == team_id) \

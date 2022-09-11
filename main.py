@@ -64,7 +64,7 @@ async def add_team(ctx, name, role: discord.Role):
             .one_or_none()
         if team is None:
             stmt = insert(Teams)\
-                .values(team_id=role.id, server_id=ctx.guild.id, name=name)
+                .values(team_id=role.id, server_id=ctx.guild.id, name=name, point_total=0)
             session.execute(stmt)
             session.commit()
             await ctx.send(f'Successfully created {name}')
