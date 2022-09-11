@@ -63,7 +63,7 @@ async def set_prefix(ctx, alias):
             else:
                 stmt = update(CustomChanges)\
                     .where(CustomChanges.server_id == ctx.guild.id)\
-                    .set(command_prefix=alias)
+                    .values(command_prefix=alias)
             session.execute(stmt)
             session.commit()
             await ctx.send(f'New command prefix is now {alias}')
@@ -91,6 +91,21 @@ async def point_giver(ctx, member: discord.Member):
             await ctx.send(f'{member.name} already has point privileges')
     else:
         await ctx.send(f'Only the server owner is allowed to assign point giver role')
+
+
+@bot.command()
+async def remove_point_giver(ctx, member: discord.Member):
+    if ctx.guild.owner_id == ctx.author.id:
+        session = base.Session()
+        stmt = update(PrivilegedUsers)\
+            .where(PrivilegedUsers.server_id == ctx.guild.id)\
+            .where(PrivilegedUsers.user_id == member.id)\
+            .values(allow_points=False)
+        session.execute(stmt)
+        session.commit()
+        await ctx.send(f'Successfully removed {member.name} as point giver')
+    else:
+        await ctx.send(f'Only the server owner can remove point givers')
 
 
 @bot.command()
