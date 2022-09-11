@@ -25,7 +25,7 @@ def custom_prefix(ctx, message: discord.Message):
         .filter(CustomChanges.server_id == message.guild.id)\
         .one_or_none()
     if prefix is None:
-        prefix = '£'
+        prefix = '?'
     return prefix
 
 
