@@ -1,3 +1,4 @@
+import discord
 from PrivilegedUsers import PrivilegedUsers
 from Teams import Teams
 from sqlalchemy import update
@@ -34,10 +35,10 @@ def check_privilege(session, ctx, points, teams):
     return False
 
 
-def check_team(session, ctx):
+def check_team(session, ctx, member: discord.Member):
     teams = session.query(Teams.team_id, Teams.name)\
         .filter(Teams.server_id == ctx.guild.id)\
-        .filter(Teams.team_id.in_([role.id for role in ctx.author.roles]))\
+        .filter(Teams.team_id.in_([role.id for role in member.roles]))\
         .all()
     if teams is None:
         return None

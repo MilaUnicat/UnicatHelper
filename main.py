@@ -128,7 +128,7 @@ async def individual_points(ctx, member: discord.Member, points):
         .filter(UserPoints.user_id == member.id)\
         .one_or_none()
     if member_points_call is None:
-        team_id_and_name = util.check_team(session=session, ctx=ctx)
+        team_id_and_name = util.check_team(session=session, ctx=ctx, member=member)
         stmt = insert(UserPoints)\
             .values(user_id=member.id, team_id=team_id_and_name[0],
                     point_total=points, server_id=ctx.guild.id)
@@ -152,7 +152,7 @@ async def individual_points(ctx, member: discord.Member, points):
 
         if member_points_call[1] is not None:
             session = base.Session()
-            team_id_and_name = util.check_team(session=session, ctx=ctx)
+            team_id_and_name = util.check_team(session=session, ctx=ctx, member=member)
             message_content = util.update_team_total(session=session, ctx=ctx, team_id=team_id_and_name[0][0],
                                                      team_name=team_id_and_name[0][1], points=points,
                                                      message_content=message_content)
