@@ -166,7 +166,8 @@ async def update_points(ctx, role: discord.Role, points):
     if privileged is False and ctx.guild.owner_id != ctx.author.id:
         await ctx.send(f'You are not allowed to update points')
     else:
-        util.update_team_total(session=session, ctx=ctx, points=points, team_name=role.name, team_id=role.id)
+        message_content = util.update_team_total(session=session, ctx=ctx, points=points, team_name=role.name, team_id=role.id)
+        await ctx.send(message_content)
 
 
 bot.run(os.getenv('TOKEN', ''))
