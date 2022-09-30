@@ -240,15 +240,17 @@ async def add(ctx, member: discord.Member):
     quote_text = ctx.message.content
     length_removed = len(f'<@{member.id}>') + 12
     quote_text = quote_text[length_removed:]
-    session = base.Session()
-    member_quotes = util.quotes_by_user(session=session, ctx=ctx, member=member)
-    member_quotes = member_quotes + 1
-    stmt = insert(Quote)\
-        .values(server_id=ctx.guild.id, user_id=member.id, quote_id=member_quotes,
-                quote_text=quote_text.strip(), date_quoted=date.today())
-    session.execute(stmt)
-    session.commit()
-    await ctx.send(f'Added quote to {member.name} - {quote_text.strip()}')
+    quote_text = quote_text.strip()
+    if quote_text[0] in ('"', "'"):
+        await ctx.send('Please try again without quotes')
+    else:
+        session = base.Session()
+        stmt = insert(Quote)\
+            .values(server_id=ctx.guild.id, user_id=member.id,
+                    quote_text=quote_text.strip(), date_quoted=date.today())
+        session.execute(stmt)
+        session.commit()
+        await ctx.send(f'Added quote to {member.name} - {quote_text.strip()}')
 
 
 @quote.command()
@@ -271,6 +273,39 @@ async def random(ctx, member: discord.Member = None):
             await ctx.send(quote_formatted)
         else:
             await ctx.send(f'No quotes found for this server')
+
+
+@quote.command()
+async def show(ctx, member: discord.Member, command):
+    session = base.Session()
+    if command.isdigit():
+        quote_displayed = session.query(Quote.quote_text, Quote.date_quoted)\
+            .filter(Quote.server_id == ctx.guild.id)\
+            .filter(Quote.user_id == member.id)\
+            .filter(Quote.quote_id == int(command))\
+            .one_or_none()
+        if quote_displayed is not None:
+            display_text = util.pretty_print_quote(member=member,
+                                                   quote_text=quote_displayed[0],
+                                                   quote_date=quote_displayed[1])
+            print(display_text)
+            await ctx.send(display_text)
+        else:
+            await ctx.send(f'No quote with id {command} exist for {member.name}')
+    else:
+        if command.lower() == 'all':
+            quotes = session.query(Quote.quote_text, Quote.date_quoted, Quote.quote_id)\
+                .filter(Quote.server_id == ctx.guild.id)\
+                .filter(Quote.user_id == member.id)\
+                .all()
+            output_text = ''
+            for row in quotes:
+                output_text = output_text + 'ID: ' + str(row[2]) + ' ' \
+                            + util.pretty_print_quote(member=member, quote_text=row[0], quote_date=row[1]) + '\n'
+            if output_text == '':
+                await ctx.send(f'No quotes found for this server')
+            else:
+                await ctx.send(output_text)
 
 
 bot.run(os.getenv('TOKEN', ''))

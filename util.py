@@ -89,7 +89,7 @@ async def get_random_quote(session, ctx, quote_number):
 
 
 def pretty_print_quote(member: discord.Member, quote_text, quote_date):
-    return f'"{quote_text}" - *{member.name} {quote_date}*'
+    return f'"{quote_text.capitalize()}" - *{member.name}, {quote_date}*'
 
 
 def update_team_total(session, ctx, team_id, team_name, points, message_content=''):

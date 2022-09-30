@@ -1,13 +1,13 @@
-from sqlalchemy import Column, BigInteger, String, Date
+from sqlalchemy import Column, BigInteger, String, Date, Identity
 from base import Base
 
 
 class Quote(Base):
     __tablename__ = 'quotes'
 
-    user_id = Column(BigInteger, nullable=False, primary_key=True)
-    server_id = Column(BigInteger, nullable=False, primary_key=True)
-    quote_id = Column(BigInteger, nullable=False)
+    user_id = Column(BigInteger, nullable=False)
+    server_id = Column(BigInteger, nullable=False)
+    quote_id = Column(BigInteger, Identity(start=0, cycle=True), nullable=False, primary_key=True)
     quote_text = Column(String, nullable=False)
     date_quoted = Column(Date)
 
