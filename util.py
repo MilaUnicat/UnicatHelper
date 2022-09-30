@@ -29,6 +29,8 @@ async def pretty_print_leaderboard(board, ctx):
             name = row[0]
         board_list += f'{row_no}) {name} - {row[1]}\n'
         row_no += 1
+    if board_list == "":
+        return 'Leaderboard is empty!'
     return board_list
 
 
