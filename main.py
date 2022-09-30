@@ -1,14 +1,18 @@
+from datetime import date
+
 import discord
 from discord.ext import commands
 import base
 from PrivilegedUsers import PrivilegedUsers
 from Teams import Teams
 from UserPoints import UserPoints
+from Quotes import Quote
 from CustomChanges import CustomChanges
 import os
 from dotenv import load_dotenv
 from sqlalchemy import insert, delete, update
 import util
+import random
 
 load_dotenv()
 
@@ -30,6 +34,7 @@ def custom_prefix(ctx, message: discord.Message):
 
 
 bot = commands.Bot(command_prefix=custom_prefix, description=description, intents=intents)
+ran_num = random
 
 
 @bot.event
@@ -222,6 +227,50 @@ async def update_points(ctx, role: discord.Role, points):
     else:
         message_content = util.update_team_total(session=session, ctx=ctx, points=points, team_name=role.name, team_id=role.id)
         await ctx.send(message_content)
+
+
+@bot.group()
+async def quote(ctx):
+    if ctx.invoked_subcommand is None:
+        await ctx.send(f'You need to provide a subcommand')
+
+
+@quote.command()
+async def add(ctx, member: discord.Member):
+    quote_text = ctx.message.content
+    length_removed = len(f'<@{member.id}>') + 12
+    quote_text = quote_text[length_removed:]
+    session = base.Session()
+    member_quotes = util.quotes_by_user(session=session, ctx=ctx, member=member)
+    member_quotes = member_quotes + 1
+    stmt = insert(Quote)\
+        .values(server_id=ctx.guild.id, user_id=member.id, quote_id=member_quotes,
+                quote_text=quote_text.strip(), date_quoted=date.today())
+    session.execute(stmt)
+    session.commit()
+    await ctx.send(f'Added quote to {member.name} - {quote_text.strip()}')
+
+
+@quote.command()
+async def random(ctx, member: discord.Member = None):
+    session = base.Session()
+    if member is None:
+        quotes_total = util.quotes_server_total(session=session, ctx=ctx)
+        if quotes_total > 0:
+            quote_number = ran_num.randint(1, quotes_total)
+            quote_formatted = await util.get_random_quote(session=session, quote_number=quote_number, ctx=ctx)
+            await ctx.send(quote_formatted)
+        else:
+            await ctx.send(f'No quotes found for this server')
+    else:
+        quotes_total = util.quotes_by_user(session=session, ctx=ctx, member=member)
+        if quotes_total > 0:
+            quote_number = ran_num.randint(1, quotes_total)
+            quote_formatted = await util.get_random_quote_member(session=session, quote_number=quote_number,
+                                                                 ctx=ctx, member=member)
+            await ctx.send(quote_formatted)
+        else:
+            await ctx.send(f'No quotes found for this server')
 
 
 bot.run(os.getenv('TOKEN', ''))

@@ -1,7 +1,8 @@
 import discord
 from PrivilegedUsers import PrivilegedUsers
 from Teams import Teams
-from sqlalchemy import update
+from Quotes import Quote
+from sqlalchemy import update, func
 
 
 def help_text():
@@ -62,6 +63,35 @@ def check_team(session, ctx, member: discord.Member):
         return teams
 
 
+def quotes_server_total(session, ctx):
+    number_of_quotes = session.query(Quote.quote_id) \
+        .filter(Quote.server_id == ctx.guild.id) \
+        .count()
+    return int(number_of_quotes)
+
+
+def quotes_by_user(session, ctx, member: discord.Member):
+    number_of_quotes = session.query(Quote.quote_id)\
+        .filter(Quote.server_id == ctx.guild.id)\
+        .filter(Quote.user_id == member.id)\
+        .count()
+    return int(number_of_quotes)
+
+
+async def get_random_quote(session, ctx, quote_number):
+    quotes_from_server = session.query(Quote.quote_text, Quote.user_id, Quote.date_quoted)\
+        .filter(Quote.server_id == ctx.guild.id)\
+        .limit(1)\
+        .offset(quote_number - 1)\
+        .all()
+    member = await ctx.guild.fetch_member(quotes_from_server[0][1])
+    return pretty_print_quote(member=member, quote_text=quotes_from_server[0][0], quote_date=quotes_from_server[0][2])
+
+
+def pretty_print_quote(member: discord.Member, quote_text, quote_date):
+    return f'"{quote_text}" - *{member.name} {quote_date}*'
+
+
 def update_team_total(session, ctx, team_id, team_name, points, message_content=''):
     team_points = session.query(Teams.point_total, Teams.name) \
         .filter(Teams.server_id == ctx.guild.id) \
@@ -84,4 +114,15 @@ def update_team_total(session, ctx, team_id, team_name, points, message_content=
         message_content = (message_content + '\n' + f'Successfully updated {team_points[1]}s points by {points} - '
                                                     f'New point total is {point_total}')
     return message_content
+
+
+async def get_random_quote_member(session, quote_number, ctx, member):
+    quotes_from_server = session.query(Quote.quote_text, Quote.user_id, Quote.date_quoted) \
+        .filter(Quote.server_id == ctx.guild.id)\
+        .filter(Quote.user_id == member.id) \
+        .limit(1) \
+        .offset(quote_number - 1) \
+        .all()
+    member = await ctx.guild.fetch_member(quotes_from_server[0][1])
+    return pretty_print_quote(member=member, quote_text=quotes_from_server[0][0], quote_date=quotes_from_server[0][2])
 
