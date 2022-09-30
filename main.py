@@ -254,6 +254,21 @@ async def add(ctx, member: discord.Member):
 
 
 @quote.command()
+async def remove(ctx, member: discord.Member, quote_id):
+    if ctx.author.id == member.id or ctx.guild.owner_id == ctx.author.id:
+        session = base.Session()
+        stmt = delete(Quote)\
+            .filter(Quote.server_id == ctx.guild.id)\
+            .filter(Quote.user_id == member.id)\
+            .filter(Quote.quote_id == quote_id)
+        session.execute(stmt)
+        session.commit()
+        await ctx.send(f'If quote existed, it no longer does')
+    else:
+        await ctx.send(f'You can only remove quotes credited to you')
+
+
+@quote.command()
 async def random(ctx, member: discord.Member = None):
     session = base.Session()
     if member is None:
