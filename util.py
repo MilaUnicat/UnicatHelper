@@ -1,20 +1,29 @@
 import discord
 from PrivilegedUsers import PrivilegedUsers
 from Teams import Teams
-from sqlalchemy import update
+from Quotes import Quote
+from sqlalchemy import update, func
 
 
 def help_text():
     help_texty = f'help_me - shows this help text\n' \
                  f'set_prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
-                 f'point_giver [@member] - grant a server member rights to update points\n' \
-                 f'remove_point_giver [@member] - revokes members rights to update points\n' \
-                 f'add_team [name] [@role] - adds a team with the name given shadowing the given role\n' \
-                 f'remove_team [@role] - removes team and points attached to the role\n' \
-                 f'individual_points [@member] [points] - gives points to server member and their team\n' \
-                 f'update_points [@role] [points] - gives points to team with the given role\n' \
-                 f'leaderboard - shows the current team standings optionally add users to get user leaderboard\n' \
-                 f'joined [@member] - shows when the given member joined'
+                 f'points leaderboard - shows the current team standings optionally add users to get user ' \
+                 f'leaderboard\n' \
+                 f'points award [@member] [points] - gives points to server member and their team\n' \
+                 f'points mod add [@member] - grant a server member rights to update points\n' \
+                 f'points mod remove [@member] - revokes members rights to update points\n' \
+                 f'points team add [name] [@role] - adds a team with the name given shadowing the given role\n' \
+                 f'points team remove [@role] - removes team and points attached to the role\n' \
+                 f'points team award [@role] [points] - gives points to team with the given role\n' \
+                 f'joined [@member] - shows when the given member joined\n' \
+                 f'quote add [@member] [quote] - adds a quote said by the member\n' \
+                 f'quote remove [@member] [quote id] - removes a quote added to a member privileged users and the ' \
+                 f'member quoted can remove it \n' \
+                 f'quote random [@member] - shows a random quote by user or totally random quote if ' \
+                 f'member isn\'t provided \n' \
+                 f'quote [@member] [quote id/all] - shows the members quote with the given id or all to list ' \
+                 f'all with the quote id'
     return help_texty
 
 
@@ -62,6 +71,35 @@ def check_team(session, ctx, member: discord.Member):
         return teams
 
 
+def quotes_server_total(session, ctx):
+    number_of_quotes = session.query(Quote.quote_id) \
+        .filter(Quote.server_id == ctx.guild.id) \
+        .count()
+    return int(number_of_quotes)
+
+
+def quotes_by_user(session, ctx, member: discord.Member):
+    number_of_quotes = session.query(Quote.quote_id)\
+        .filter(Quote.server_id == ctx.guild.id)\
+        .filter(Quote.user_id == member.id)\
+        .count()
+    return int(number_of_quotes)
+
+
+async def get_random_quote(session, ctx, quote_number):
+    quotes_from_server = session.query(Quote.quote_text, Quote.user_id, Quote.date_quoted)\
+        .filter(Quote.server_id == ctx.guild.id)\
+        .limit(1)\
+        .offset(quote_number - 1)\
+        .all()
+    member = await ctx.guild.fetch_member(quotes_from_server[0][1])
+    return pretty_print_quote(member=member, quote_text=quotes_from_server[0][0], quote_date=quotes_from_server[0][2])
+
+
+def pretty_print_quote(member: discord.Member, quote_text, quote_date):
+    return f'"{quote_text.capitalize()}" - *{member.name}, {quote_date}*'
+
+
 def update_team_total(session, ctx, team_id, team_name, points, message_content=''):
     team_points = session.query(Teams.point_total, Teams.name) \
         .filter(Teams.server_id == ctx.guild.id) \
@@ -84,4 +122,15 @@ def update_team_total(session, ctx, team_id, team_name, points, message_content=
         message_content = (message_content + '\n' + f'Successfully updated {team_points[1]}s points by {points} - '
                                                     f'New point total is {point_total}')
     return message_content
+
+
+async def get_random_quote_member(session, quote_number, ctx, member):
+    quotes_from_server = session.query(Quote.quote_text, Quote.user_id, Quote.date_quoted) \
+        .filter(Quote.server_id == ctx.guild.id)\
+        .filter(Quote.user_id == member.id) \
+        .limit(1) \
+        .offset(quote_number - 1) \
+        .all()
+    member = await ctx.guild.fetch_member(quotes_from_server[0][1])
+    return pretty_print_quote(member=member, quote_text=quotes_from_server[0][0], quote_date=quotes_from_server[0][2])
 
