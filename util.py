@@ -8,14 +8,22 @@ from sqlalchemy import update, func
 def help_text():
     help_texty = f'help_me - shows this help text\n' \
                  f'set_prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
-                 f'point_giver [@member] - grant a server member rights to update points\n' \
-                 f'remove_point_giver [@member] - revokes members rights to update points\n' \
-                 f'add_team [name] [@role] - adds a team with the name given shadowing the given role\n' \
-                 f'remove_team [@role] - removes team and points attached to the role\n' \
-                 f'individual_points [@member] [points] - gives points to server member and their team\n' \
-                 f'update_points [@role] [points] - gives points to team with the given role\n' \
-                 f'leaderboard - shows the current team standings optionally add users to get user leaderboard\n' \
-                 f'joined [@member] - shows when the given member joined'
+                 f'points leaderboard - shows the current team standings optionally add users to get user ' \
+                 f'leaderboard\n' \
+                 f'points award [@member] [points] - gives points to server member and their team\n' \
+                 f'points mod add [@member] - grant a server member rights to update points\n' \
+                 f'points mod remove [@member] - revokes members rights to update points\n' \
+                 f'points team add [name] [@role] - adds a team with the name given shadowing the given role\n' \
+                 f'points team remove [@role] - removes team and points attached to the role\n' \
+                 f'points team award [@role] [points] - gives points to team with the given role\n' \
+                 f'joined [@member] - shows when the given member joined\n' \
+                 f'quote add [@member] [quote] - adds a quote said by the member\n' \
+                 f'quote remove [@member] [quote id] - removes a quote added to a member privileged users and the ' \
+                 f'member quoted can remove it \n' \
+                 f'quote random [@member] - shows a random quote by user or totally random quote if ' \
+                 f'member isn\'t provided \n' \
+                 f'quote [@member] [quote id/all] - shows the members quote with the given id or all to list ' \
+                 f'all with the quote id'
     return help_texty
 
 
