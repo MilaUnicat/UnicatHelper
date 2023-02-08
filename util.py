@@ -22,7 +22,7 @@ def help_text():
                  f'member quoted can remove it \n' \
                  f'quote random [@member] - shows a random quote by user or totally random quote if ' \
                  f'member isn\'t provided \n' \
-                 f'quote [@member] [quote id/all] - shows the members quote with the given id or all to list ' \
+                 f'quote show [@member] [quote id/all] - shows the members quote with the given id or all to list ' \
                  f'all with the quote id'
     return help_texty
 
