@@ -230,7 +230,7 @@ async def award(ctx, member: discord.Member, points_amount):
         session.execute(stmt)
         session.commit()
         message_content = f'Added {points_amount} to {member.display_name} which is their new total'
-        if team_id_and_name is not None:
+        if team_id_and_name:
             session = base.Session()
             message_content = util.update_team_total(session=session, ctx=ctx, points=points_amount,
                                                      team_name=team_id_and_name[0][1], team_id=team_id_and_name[0][0],
@@ -245,12 +245,13 @@ async def award(ctx, member: discord.Member, points_amount):
         session.commit()
         message_content = f'Added {points_amount} to {member.display_name} their new total is {total}'
 
-        if member_points_call[1] is not None:
+        if member_points_call is not None:
             session = base.Session()
             team_id_and_name = util.check_team(session=session, ctx=ctx, member=member)
-            message_content = util.update_team_total(session=session, ctx=ctx, team_id=team_id_and_name[0][0],
-                                                     team_name=team_id_and_name[0][1], points=points_amount,
-                                                     message_content=message_content)
+            if team_id_and_name:
+                message_content = util.update_team_total(session=session, ctx=ctx, team_id=team_id_and_name[0][0],
+                                                         team_name=team_id_and_name[0][1], points=points_amount,
+                                                         message_content=message_content)
         await ctx.send(message_content)
 
 
@@ -261,36 +262,44 @@ async def quote(ctx):
 
 
 @quote.command()
-async def add(ctx, member: discord.Member):
-    quote_text = ctx.message.content
-    length_removed = len(f'<@{member.id}>') + 12
-    quote_text = quote_text[length_removed:]
-    quote_text = quote_text.strip()
-    if quote_text[0] in ('"', "'"):
-        await ctx.send('Please try again without quotes')
+async def add(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send(f'Please provide member to quote')
     else:
-        session = base.Session()
-        stmt = insert(Quote)\
-            .values(server_id=ctx.guild.id, user_id=member.id,
-                    quote_text=quote_text.strip(), date_quoted=date.today())
-        session.execute(stmt)
-        session.commit()
-        await ctx.send(f'Added quote to {member.name} - {quote_text.strip()}')
+        quote_text = ctx.message.content
+        length_removed = len(f'<@{member.id}>') + 12
+        quote_text = quote_text[length_removed:]
+        quote_text = quote_text.strip()
+        if quote_text[0] in ('"', "'"):
+            await ctx.send('Please try again without quotes')
+        elif len(quote_text) < 1:
+            await ctx.send(f'Please provide the quote with your command')
+        else:
+            session = base.Session()
+            stmt = insert(Quote)\
+                .values(server_id=ctx.guild.id, user_id=member.id,
+                        quote_text=quote_text.strip(), date_quoted=date.today())
+            session.execute(stmt)
+            session.commit()
+            await ctx.send(f'Added quote to {member.name} - {quote_text.strip()}')
 
 
 @quote.command()
-async def remove(ctx, member: discord.Member, quote_id):
-    if ctx.author.id == member.id or ctx.guild.owner_id == ctx.author.id:
-        session = base.Session()
-        stmt = delete(Quote)\
-            .filter(Quote.server_id == ctx.guild.id)\
-            .filter(Quote.user_id == member.id)\
-            .filter(Quote.quote_id == quote_id)
-        session.execute(stmt)
-        session.commit()
-        await ctx.send(f'If quote existed, it no longer does')
+async def remove(ctx, member: discord.Member = None, quote_id=None):
+    if member is None or quote_id is None:
+        await ctx.send(f'Please provide both member and quote id to use command')
     else:
-        await ctx.send(f'You can only remove quotes credited to you')
+        if ctx.author.id == member.id or ctx.guild.owner_id == ctx.author.id:
+            session = base.Session()
+            stmt = delete(Quote)\
+                .filter(Quote.server_id == ctx.guild.id)\
+                .filter(Quote.user_id == member.id)\
+                .filter(Quote.quote_id == quote_id)
+            session.execute(stmt)
+            session.commit()
+            await ctx.send(f'If quote existed, it no longer does')
+        else:
+            await ctx.send(f'You can only remove quotes credited to you')
 
 
 @quote.command()
@@ -316,36 +325,39 @@ async def random(ctx, member: discord.Member = None):
 
 
 @quote.command()
-async def show(ctx, member: discord.Member, command):
-    session = base.Session()
-    if command.isdigit():
-        quote_displayed = session.query(Quote.quote_text, Quote.date_quoted)\
-            .filter(Quote.server_id == ctx.guild.id)\
-            .filter(Quote.user_id == member.id)\
-            .filter(Quote.quote_id == int(command))\
-            .one_or_none()
-        if quote_displayed is not None:
-            display_text = util.pretty_print_quote(member=member,
-                                                   quote_text=quote_displayed[0],
-                                                   quote_date=quote_displayed[1])
-            print(display_text)
-            await ctx.send(display_text)
-        else:
-            await ctx.send(f'No quote with id {command} exist for {member.name}')
+async def show(ctx, member: discord.Member = None, command=None):
+    if member is None or command is None:
+        await ctx.send(f'Please provide both member and command to use this')
     else:
-        if command.lower() == 'all':
-            quotes = session.query(Quote.quote_text, Quote.date_quoted, Quote.quote_id)\
+        session = base.Session()
+        if command.isdigit():
+            quote_displayed = session.query(Quote.quote_text, Quote.date_quoted)\
                 .filter(Quote.server_id == ctx.guild.id)\
                 .filter(Quote.user_id == member.id)\
-                .all()
-            output_text = ''
-            for row in quotes:
-                output_text = output_text + 'ID: ' + str(row[2]) + ' ' \
-                            + util.pretty_print_quote(member=member, quote_text=row[0], quote_date=row[1]) + '\n'
-            if output_text == '':
-                await ctx.send(f'No quotes found for this server')
+                .filter(Quote.quote_id == int(command))\
+                .one_or_none()
+            if quote_displayed is not None:
+                display_text = util.pretty_print_quote(member=member,
+                                                       quote_text=quote_displayed[0],
+                                                       quote_date=quote_displayed[1])
+                print(display_text)
+                await ctx.send(display_text)
             else:
-                await ctx.send(output_text)
+                await ctx.send(f'No quote with id {command} exist for {member.name}')
+        else:
+            if command.lower() == 'all':
+                quotes = session.query(Quote.quote_text, Quote.date_quoted, Quote.quote_id)\
+                    .filter(Quote.server_id == ctx.guild.id)\
+                    .filter(Quote.user_id == member.id)\
+                    .all()
+                output_text = ''
+                for row in quotes:
+                    output_text = output_text + 'ID: ' + str(row[2]) + ' ' \
+                                  + util.pretty_print_quote(member=member, quote_text=row[0], quote_date=row[1]) + '\n'
+                if output_text == '':
+                    await ctx.send(f'No quotes found for this server')
+                else:
+                    await ctx.send(output_text)
 
 
 bot.run(os.getenv('TOKEN', ''))
