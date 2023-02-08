@@ -245,7 +245,7 @@ async def award(ctx, member: discord.Member, points_amount):
         session.commit()
         message_content = f'Added {points_amount} to {member.display_name} their new total is {total}'
 
-        if member_points_call is not None:
+        if member_points_call[1] is not None:
             session = base.Session()
             team_id_and_name = util.check_team(session=session, ctx=ctx, member=member)
             if team_id_and_name:
