@@ -8,6 +8,7 @@ from Teams import Teams
 from UserPoints import UserPoints
 from Quotes import Quote
 from CustomChanges import CustomChanges
+from EnabledFeatures import EnabledFeatures
 import os
 from dotenv import load_dotenv
 from sqlalchemy import insert, delete, update
@@ -54,8 +55,14 @@ async def joined(ctx, member: discord.Member):
     await ctx.send(f'{member.name} joined {discord.utils.format_dt(member.joined_at)}')
 
 
-@bot.command()
-async def set_prefix(ctx, alias):
+@bot.group()
+async def setup(ctx):
+    if ctx.invoked_subcommand is None:
+        await ctx.send(f'You need to provide a subcommand')
+
+
+@setup.command()
+async def prefix(ctx, alias):
     if len(alias) == 1:
         if ctx.guild.owner_id == ctx.author.id:
             session = base.Session()
@@ -78,10 +85,40 @@ async def set_prefix(ctx, alias):
         await ctx.send(f'Alias must be only one character!')
 
 
-@bot.group()
-async def points(ctx):
+@setup.group()
+async def feature(ctx):
     if ctx.invoked_subcommand is None:
         await ctx.send(f'You need to provide a subcommand')
+
+
+@feature.command()
+async def points(ctx, enabled='on'):
+    session = base.Session()
+    message = util.enable_disable_feature(session=session, ctx=ctx, enabled=enabled, feature='points')
+    if message is not None:
+        await ctx.send(message)
+
+
+@feature.command()
+async def quote(ctx, enabled='on'):
+    session = base.Session()
+    message = util.enable_disable_feature(session=session, ctx=ctx, enabled=enabled, feature='quote')
+    if message is not None:
+        await ctx.send(message)
+
+
+@bot.group()
+async def points(ctx):
+    session = base.Session()
+    points_enabled = session.query(EnabledFeatures.points_enabled) \
+        .filter(EnabledFeatures.server_id == ctx.guild.id) \
+        .one_or_none()
+    if points_enabled is None or points_enabled[0]:
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f'You need to provide a subcommand')
+    else:
+        # if feature is not enabled don't do anything
+        ctx.invoked_subcommand = None
 
 
 @points.command()
@@ -257,8 +294,16 @@ async def award(ctx, member: discord.Member, points_amount):
 
 @bot.group()
 async def quote(ctx):
-    if ctx.invoked_subcommand is None:
-        await ctx.send(f'You need to provide a subcommand - add - remove - random - show')
+    session = base.Session()
+    quote_enabled = session.query(EnabledFeatures.quotes_enabled) \
+        .filter(EnabledFeatures.server_id == ctx.guild.id) \
+        .one_or_none()
+    if quote_enabled is None or quote_enabled[0]:
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f'You need to provide a subcommand - add - remove - random - show')
+    else:
+        # if feature is not enabled don't do anything
+        ctx.invoked_subcommand = None
 
 
 @quote.command()

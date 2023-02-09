@@ -1,13 +1,16 @@
 import discord
 from PrivilegedUsers import PrivilegedUsers
+from EnabledFeatures import EnabledFeatures
 from Teams import Teams
 from Quotes import Quote
-from sqlalchemy import update, func
+from sqlalchemy import update, func, insert
 
 
 def help_text():
     help_texty = f'help_me - shows this help text\n' \
-                 f'set_prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
+                 f'setup prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
+                 f'setup feature points [on/off] - enables or disables the points commands default is on\n' \
+                 f'setup feature quotes [on/off] - enables or disables the quote commands default is on\n' \
                  f'points leaderboard - shows the current team standings optionally add users to get user ' \
                  f'leaderboard\n' \
                  f'points award [@member] [points] - gives points to server member and their team\n' \
@@ -41,6 +44,48 @@ async def pretty_print_leaderboard(board, ctx):
     if board_list == "":
         return 'Leaderboard is empty!'
     return board_list
+
+
+def enable_disable_feature(session, ctx, enabled, feature):
+    if enabled not in ('on', 'off'):
+        return f'Please provide either on or off to enable or disable feature'
+    else:
+        if ctx.guild.owner_id == ctx.author.id:
+            if enabled == 'on':
+                new_state = True
+            else:
+                new_state = False
+            if feature == 'quote':
+                stmt = session.query(EnabledFeatures.quotes_enabled)
+                quote_state = new_state
+                points_state = True
+            elif feature == 'points':
+                stmt = session.query(EnabledFeatures.points_enabled)
+                points_state = new_state
+                quote_state = True
+            else:
+                return f'Feature {feature} does\'t exist'
+            feature_enabled = stmt.filter(EnabledFeatures.server_id == ctx.guild.id).one_or_none()
+            if feature_enabled is None:
+                stmt = insert(EnabledFeatures) \
+                    .values(server_id=ctx.guild.id, quotes_enabled=quote_state, points_enabled=points_state)
+                session.execute(stmt)
+                session.commit()
+            else:
+                if feature_enabled == new_state:
+                    return f'Feature is already {enabled}'
+                else:
+                    stmt = update(EnabledFeatures) \
+                        .where(EnabledFeatures.server_id == ctx.guild.id)
+                    if feature == 'points':
+                        stmt = stmt.values(points_enabled=new_state)
+                    elif feature == 'quote':
+                        stmt = stmt.values(quotes_enabled=new_state)
+                    session.execute(stmt)
+                    session.commit()
+                    return f'Feature is now {enabled}'
+        else:
+            return f'Only server owner can enable or disable features'
 
 
 def check_privilege(session, ctx, points, teams):
