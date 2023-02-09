@@ -93,69 +93,18 @@ async def feature(ctx):
 
 @feature.command()
 async def points(ctx, enabled='on'):
-    if enabled not in ('on', 'off'):
-        await ctx.send(f'Please provide either on or off to enable or disable feature')
-    else:
-        if ctx.guild.owner_id == ctx.author.id:
-            session = base.Session()
-            points_enabled = session.query(EnabledFeatures.points_enabled) \
-                .filter(EnabledFeatures.server_id == ctx.guild.id) \
-                .one_or_none()
-            if enabled == 'on':
-                new_state = True
-            else:
-                new_state = False
-            if points_enabled is None:
-                stmt = insert(EnabledFeatures) \
-                    .values(server_id=ctx.guild.id, points_enabled=new_state, quotes_enabled=True)
-                session.execute(stmt)
-                session.commit()
-            else:
-                if points_enabled == new_state:
-                    await ctx.send(f'Feature is already {enabled}')
-                else:
-                    stmt = update(EnabledFeatures) \
-                        .where(EnabledFeatures.server_id == ctx.guild.id) \
-                        .values(points_enabled=new_state)
-                    session.execute(stmt)
-                    session.commit()
-                    await ctx.send(f'Feature is now {enabled}')
-        else:
-            await ctx.send(f'Only server owner can enable or disable features')
+    session = base.Session()
+    message = util.enable_disable_feature(session=session, ctx=ctx, enabled=enabled, feature='points')
+    if message is not None:
+        await ctx.send(message)
 
 
-# TODO: move to utils to avoid duplicated code
 @feature.command()
 async def quote(ctx, enabled='on'):
-    if enabled not in ('on', 'off'):
-        await ctx.send(f'Please provide either on or off to enable or disable feature')
-    else:
-        if ctx.guild.owner_id == ctx.author.id:
-            session = base.Session()
-            quote_enabled = session.query(EnabledFeatures.quotes_enabled) \
-                .filter(EnabledFeatures.server_id == ctx.guild.id) \
-                .one_or_none()
-            if enabled == 'on':
-                new_state = True
-            else:
-                new_state = False
-            if quote_enabled is None:
-                stmt = insert(EnabledFeatures) \
-                    .values(server_id=ctx.guild.id, quotes_enabled=new_state, points_enabled=True)
-                session.execute(stmt)
-                session.commit()
-            else:
-                if quote_enabled == new_state:
-                    await ctx.send(f'Feature is already {enabled}')
-                else:
-                    stmt = update(EnabledFeatures) \
-                        .where(EnabledFeatures.server_id == ctx.guild.id) \
-                        .values(quotes_enabled=new_state)
-                    session.execute(stmt)
-                    session.commit()
-                    await ctx.send(f'Feature is now {enabled}')
-        else:
-            await ctx.send(f'Only server owner can enable or disable features')
+    session = base.Session()
+    message = util.enable_disable_feature(session=session, ctx=ctx, enabled=enabled, feature='quote')
+    if message is not None:
+        await ctx.send(message)
 
 
 @bot.group()
