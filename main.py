@@ -295,7 +295,7 @@ async def award(ctx, member: discord.Member, points_amount):
 @bot.group()
 async def quote(ctx):
     session = base.Session()
-    quote_enabled = session.query(EnabledFeatures.points_enabled) \
+    quote_enabled = session.query(EnabledFeatures.quotes_enabled) \
         .filter(EnabledFeatures.server_id == ctx.guild.id) \
         .one_or_none()
     if quote_enabled is None or quote_enabled[0]:
@@ -303,7 +303,7 @@ async def quote(ctx):
             await ctx.send(f'You need to provide a subcommand - add - remove - random - show')
     else:
         # if feature is not enabled don't do anything
-        return
+        ctx.invoked_subcommand = None
 
 
 @quote.command()
