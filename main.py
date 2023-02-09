@@ -8,6 +8,7 @@ from Teams import Teams
 from UserPoints import UserPoints
 from Quotes import Quote
 from CustomChanges import CustomChanges
+from EnabledFeatures import EnabledFeatures
 import os
 from dotenv import load_dotenv
 from sqlalchemy import insert, delete, update
@@ -54,8 +55,14 @@ async def joined(ctx, member: discord.Member):
     await ctx.send(f'{member.name} joined {discord.utils.format_dt(member.joined_at)}')
 
 
-@bot.command()
-async def set_prefix(ctx, alias):
+@bot.group()
+async def setup(ctx):
+    if ctx.invoked_subcommand is None:
+        await ctx.send(f'You need to provide a subcommand')
+
+
+@setup.command()
+async def prefix(ctx, alias):
     if len(alias) == 1:
         if ctx.guild.owner_id == ctx.author.id:
             session = base.Session()
@@ -78,10 +85,91 @@ async def set_prefix(ctx, alias):
         await ctx.send(f'Alias must be only one character!')
 
 
-@bot.group()
-async def points(ctx):
+@setup.group()
+async def feature(ctx):
     if ctx.invoked_subcommand is None:
         await ctx.send(f'You need to provide a subcommand')
+
+
+@feature.command()
+async def points(ctx, enabled='on'):
+    if enabled not in ('on', 'off'):
+        await ctx.send(f'Please provide either on or off to enable or disable feature')
+    else:
+        if ctx.guild.owner_id == ctx.author.id:
+            session = base.Session()
+            points_enabled = session.query(EnabledFeatures.points_enabled) \
+                .filter(EnabledFeatures.server_id == ctx.guild.id) \
+                .one_or_none()
+            if enabled == 'on':
+                new_state = True
+            else:
+                new_state = False
+            if points_enabled is None:
+                stmt = insert(EnabledFeatures) \
+                    .values(server_id=ctx.guild.id, points_enabled=new_state, quotes_enabled=True)
+                session.execute(stmt)
+                session.commit()
+            else:
+                if points_enabled == new_state:
+                    await ctx.send(f'Feature is already {enabled}')
+                else:
+                    stmt = update(EnabledFeatures) \
+                        .where(EnabledFeatures.server_id == ctx.guild.id) \
+                        .values(points_enabled=new_state)
+                    session.execute(stmt)
+                    session.commit()
+                    await ctx.send(f'Feature is now {enabled}')
+        else:
+            await ctx.send(f'Only server owner can enable or disable features')
+
+
+# TODO: move to utils to avoid duplicated code
+@feature.command()
+async def quote(ctx, enabled='on'):
+    if enabled not in ('on', 'off'):
+        await ctx.send(f'Please provide either on or off to enable or disable feature')
+    else:
+        if ctx.guild.owner_id == ctx.author.id:
+            session = base.Session()
+            quote_enabled = session.query(EnabledFeatures.quotes_enabled) \
+                .filter(EnabledFeatures.server_id == ctx.guild.id) \
+                .one_or_none()
+            if enabled == 'on':
+                new_state = True
+            else:
+                new_state = False
+            if quote_enabled is None:
+                stmt = insert(EnabledFeatures) \
+                    .values(server_id=ctx.guild.id, quotes_enabled=new_state, points_enabled=True)
+                session.execute(stmt)
+                session.commit()
+            else:
+                if quote_enabled == new_state:
+                    await ctx.send(f'Feature is already {enabled}')
+                else:
+                    stmt = update(EnabledFeatures) \
+                        .where(EnabledFeatures.server_id == ctx.guild.id) \
+                        .values(quotes_enabled=new_state)
+                    session.execute(stmt)
+                    session.commit()
+                    await ctx.send(f'Feature is now {enabled}')
+        else:
+            await ctx.send(f'Only server owner can enable or disable features')
+
+
+@bot.group()
+async def points(ctx):
+    session = base.Session()
+    points_enabled = session.query(EnabledFeatures.points_enabled) \
+        .filter(EnabledFeatures.server_id == ctx.guild.id) \
+        .one_or_none()
+    if points_enabled is None or points_enabled[0]:
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f'You need to provide a subcommand')
+    else:
+        # if feature is not enabled don't do anything
+        ctx.invoked_subcommand = None
 
 
 @points.command()
@@ -257,8 +345,16 @@ async def award(ctx, member: discord.Member, points_amount):
 
 @bot.group()
 async def quote(ctx):
-    if ctx.invoked_subcommand is None:
-        await ctx.send(f'You need to provide a subcommand - add - remove - random - show')
+    session = base.Session()
+    quote_enabled = session.query(EnabledFeatures.points_enabled) \
+        .filter(EnabledFeatures.server_id == ctx.guild.id) \
+        .one_or_none()
+    if quote_enabled is None or quote_enabled[0]:
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f'You need to provide a subcommand - add - remove - random - show')
+    else:
+        # if feature is not enabled don't do anything
+        return
 
 
 @quote.command()
