@@ -7,7 +7,9 @@ from sqlalchemy import update, func
 
 def help_text():
     help_texty = f'help_me - shows this help text\n' \
-                 f'set_prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
+                 f'setup prefix [prefix] - allows you to set a custom one character prefix default is ?\n' \
+                 f'setup feature points [on/off] - enables or disables the points commands default is on\n' \
+                 f'setup feature quotes [on/off] - enables or disables the quote commands default is on\n' \
                  f'points leaderboard - shows the current team standings optionally add users to get user ' \
                  f'leaderboard\n' \
                  f'points award [@member] [points] - gives points to server member and their team\n' \
